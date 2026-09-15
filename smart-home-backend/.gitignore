@@ -1,0 +1,15 @@
+target/
+*.class
+*.log
+
+.idea/
+*.iml
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+.env
+application-local.properties
+application-secret.properties
