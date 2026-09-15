@@ -1,0 +1,26 @@
+# Build directories
+target/
+**/target/
+*.class
+
+# IDE & Editor files
+.idea/
+*.iml
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# Logs
+*.log
+
+# Environment & local config
+.env
+application-local.properties
+application-secret.properties
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
