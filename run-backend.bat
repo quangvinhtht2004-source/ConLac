@@ -11,14 +11,18 @@ if exist "smart-home-backend\pom.xml" (
     cd /d "%~dp0smart-home-backend"
 )
 
-echo [1/3] Kiem tra thu muc: %CD%
+echo [1/5] Kiem tra thu muc: %CD%
 if not exist "pom.xml" (
     echo [LOI] Khong tim thay pom.xml!
     echo Vui long dat file bat trong thu muc QLNTM hoac smart-home-backend.
     goto END
 )
 
-echo [2/3] Kiem tra Java...
+echo [2/5] Kiem tra moi truong Java...
+if exist "C:\Program Files\Java\jdk-17" (
+    set "JAVA_HOME=C:\Program Files\Java\jdk-17"
+    set "PATH=C:\Program Files\Java\jdk-17\bin;%PATH%"
+)
 where java >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [LOI] Khong tim thay Java trong PATH!
@@ -47,6 +51,32 @@ if "%MVN_CMD%"=="" (
     goto END
 )
 
+echo [3/5] Kiem tra file cau hinh .env...
+if exist ".env" (
+    echo   [OK] Da tim thay file .env tai: %CD%\.env
+    echo        Cac bien moi truong (DB_PASSWORD, JWT_SECRET, DEVICE_API_KEY...) se duoc tu dong nap boi spring-dotenv.
+) else (
+    echo   [CANH BAO] Khong tim thay file .env tai: %CD%\.env
+    echo   Luu y: Neu chua set bien moi truong he thong, Spring Boot se bao loi
+    echo          thieu cac placeholder: DB_PASSWORD, JWT_SECRET, DEVICE_API_KEY...
+    if exist ".env.example" (
+        echo   Goi y: Ban co the copy file .env.example thanh .env va dien thong tin that.
+    )
+)
+echo.
+
+echo [4/5] Kiem tra va dong bo thu vien (Maven dependencies)...
+echo Dang kiem tra / tai cac dependency neu co thay doi moi (nhu spring-dotenv)...
+call "%MVN_CMD%" compile -DskipTests
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [CANH BAO] Qua trinh compile / tai dependency chua thanh cong.
+    echo Ban co the chon muc [3] trong Menu ben duoi de Clean va Install lai toan bo.
+    goto MENU
+)
+echo   [OK] Cac thu vien da duoc kiem tra va san sang.
+echo.
+
 :CHECK_PORT_INIT
 netstat -aon | findstr :8080 | findstr LISTENING >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
@@ -58,7 +88,7 @@ if %ERRORLEVEL% EQU 0 (
 
 :RUN_SERVER
 echo.
-echo [3/3] Dang khoi dong Spring Boot Server tren port 8080
+echo [5/5] Dang khoi dong Spring Boot Server tren port 8080
 echo -------------------------------------------------------
 echo Server chay tai: http://localhost:8080
 echo.
@@ -84,17 +114,21 @@ echo                   MENU DIEU KHIEN
 echo =======================================================
 echo   [1] / [R] : Khoi dong lai Backend (Restart)
 echo   [2] / [K] : Giai phong Port 8080 va Khoi dong lai
-echo   [3] / [E] : Thoat (Exit)
+echo   [3] / [I] : Clean & Tai lai toan bo Dependencies (mvn clean install)
+echo   [4] / [E] : Thoat (Exit)
 echo =======================================================
 set "USER_OPT="
-set /p "USER_OPT=Nhap lua chon cua ban [1-3 / R/K/E] (Mac dinh: Restart): "
+set /p "USER_OPT=Nhap lua chon cua ban [1-4 / R/K/I/E] (Mac dinh: Restart): "
 
 if not defined USER_OPT goto DO_RESTART
 if /i "%USER_OPT%"=="1" goto DO_RESTART
 if /i "%USER_OPT%"=="R" goto DO_RESTART
 if /i "%USER_OPT%"=="2" goto DO_KILL_AND_RESTART
 if /i "%USER_OPT%"=="K" goto DO_KILL_AND_RESTART
-if /i "%USER_OPT%"=="3" goto END
+if /i "%USER_OPT%"=="3" goto DO_CLEAN_INSTALL
+if /i "%USER_OPT%"=="I" goto DO_CLEAN_INSTALL
+if /i "%USER_OPT%"=="C" goto DO_CLEAN_INSTALL
+if /i "%USER_OPT%"=="4" goto END
 if /i "%USER_OPT%"=="E" goto END
 if /i "%USER_OPT%"=="Q" goto END
 
@@ -112,6 +146,24 @@ echo =======================================================
 echo             DANG KHOI DONG LAI BACKEND...
 echo =======================================================
 goto RUN_SERVER
+
+:DO_CLEAN_INSTALL
+echo.
+echo =======================================================
+echo     DANG CLEAN VA TAI LAI TOAN BO DEPENDENCIES...
+echo =======================================================
+call "%MVN_CMD%" clean install -DskipTests
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo [OK] Da tai va cai dat dependencies thanh cong!
+    echo Dang khoi dong lai Backend...
+    timeout /t 2 /nobreak >nul
+    goto RUN_SERVER
+) else (
+    echo.
+    echo [LOI] Clean install that bai! Vui long kiem tra ket noi mang hoac pom.xml.
+    goto MENU
+)
 
 :KILL_PORT_8080
 echo [*] Kiem tra va giai phong port 8080...
