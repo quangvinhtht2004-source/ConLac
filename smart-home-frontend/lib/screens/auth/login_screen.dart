@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -77,9 +78,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 2),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.blueAccent.withOpacity(0.2),
+                    color: Colors.blueAccent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
@@ -97,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   'Chào mừng bạn trở lại, quản lý ngôi nhà dễ dàng hơn',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 14,
                   ),
                 ),
@@ -134,7 +138,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: _obscurePassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: const Color(0xFF8D8FA1),
                       size: 20,
                     ),
@@ -180,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           'Ghi nhớ đăng nhập',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 13,
                           ),
                         ),
@@ -243,27 +249,63 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 SizedBox(width: 8),
-                                Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                                Icon(
+                                  Icons.arrow_forward,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ],
                             ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 12),
+
+                // Nút duyệt nhanh giao diện không cần tài khoản backend
+                TextButton.icon(
+                  onPressed: () {
+                    authProvider.loginDemo(vaiTro: 'Admin');
+                    Navigator.pushReplacementNamed(context, '/home');
+                  },
+                  icon: const Icon(
+                    Icons.play_circle_fill_outlined,
+                    color: Color(0xFF06B6D4),
+                    size: 18,
+                  ),
+                  label: const Text(
+                    'Xem nhanh giao diện (Bỏ qua đăng nhập)',
+                    style: TextStyle(
+                      color: Color(0xFF06B6D4),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // === SINH TRẮC HỌC (placeholder) ===
-                Icon(Icons.fingerprint, color: Colors.white.withOpacity(0.4), size: 48),
+                Icon(
+                  Icons.fingerprint,
+                  color: Colors.white.withValues(alpha: 0.4),
+                  size: 48,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Đăng nhập nhanh bằng sinh trắc học',
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 20),
 
                 // === HOẶC TIẾP TỤC VỚI ===
                 Text(
                   'hoặc tiếp tục với',
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -293,22 +335,34 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       'Điều khoản dịch vụ',
-                      style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        fontSize: 12,
+                      ),
                     ),
                     Text(
                       '  •  ',
-                      style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        fontSize: 12,
+                      ),
                     ),
                     Text(
                       'Chính sách bảo mật',
-                      style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '© 2024 SmartHome IoT Hub. Bảo lưu mọi quyền.',
-                  style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 11),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    fontSize: 11,
+                  ),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -408,7 +462,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
@@ -436,7 +490,10 @@ class _LoginScreenState extends State<LoginScreen> {
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: const Color(0xFF1A1F36),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFF2A2F46)),
@@ -479,11 +536,8 @@ class _LoginScreenState extends State<LoginScreen> {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 12),
         side: const BorderSide(color: Color(0xFF2A2F46)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 }
-

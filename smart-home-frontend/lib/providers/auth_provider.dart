@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/user.dart';
 import '../services/auth_service.dart';
 
@@ -23,7 +24,10 @@ class AuthProvider extends ChangeNotifier {
     final vaiTro = prefs.getString('vaiTro');
     final maNguoiDung = prefs.getInt('maNguoiDung');
 
-    if (token != null && hoTen != null && vaiTro != null && maNguoiDung != null) {
+    if (token != null &&
+        hoTen != null &&
+        vaiTro != null &&
+        maNguoiDung != null) {
       _user = User(
         maNguoiDung: maNguoiDung,
         hoTen: hoTen,
@@ -60,6 +64,17 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// Đăng nhập Demo (để xem thử giao diện mà không cần phụ thuộc backend)
+  void loginDemo({String vaiTro = 'Admin'}) {
+    _user = User(
+      maNguoiDung: 1,
+      hoTen: vaiTro == 'Admin' ? 'Quang Vinh' : 'Thành Viên Demo',
+      vaiTro: vaiTro,
+      token: 'demo_token_123',
+    );
+    notifyListeners();
   }
 
   /// Đăng ký
@@ -109,5 +124,34 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
-}
 
+  /// Lấy thông tin tài khoản hiện tại từ Backend: GET /api/user/me
+  Future<Map<String, dynamic>?> fetchCurrentUser() async {
+    if (_user == null || _user!.token.isEmpty) {
+      return null;
+    }
+
+    try {
+      final data = await _authService.getCurrentUser(_user!.token);
+      return data;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return null;
+    }
+  }
+
+  /// Kiểm tra quyền Admin từ Backend: GET /api/admin/ping
+  Future<String?> pingAdmin() async {
+    if (_user == null || _user!.token.isEmpty) {
+      return 'Chưa đăng nhập';
+    }
+
+    try {
+      final msg = await _authService.pingAdmin(_user!.token);
+      return msg;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      rethrow;
+    }
+  }
+}

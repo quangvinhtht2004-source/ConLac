@@ -108,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   'Tạo tài khoản mới để kết nối và tự động hóa\nkhông gian sống của bạn',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 14,
                   ),
                 ),
@@ -133,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(width: 6),
                       Text(
                         'Bảo mật đa lớp tiêu chuẩn Matter & Zigbee',
-                        style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
                       ),
                     ],
                   ),
@@ -146,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Text(
                       'VAI TRÒ TRONG HỆ THỐNG',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1,
@@ -155,7 +155,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const Spacer(),
                     Text(
                       'Có thể đổi sau',
-                      style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
                     ),
                   ],
                 ),
@@ -323,7 +323,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: Text(
                         'Tôi đồng ý với Điều khoản dịch vụ & Chính sách bảo mật của SmartHome',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 12,
                         ),
                       ),
@@ -384,7 +384,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // === HOẶC ĐĂNG KÝ NHANH ===
                 Text(
                   'hoặc đăng ký nhanh bằng',
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -414,7 +414,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Text(
                       'Đã có tài khoản? ',
-                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -441,14 +441,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(width: 4),
                     Text(
                       'Bảo vệ bằng mã hóa cấp quân sự AES-256',
-                      style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '© 2025 SmartHome IoT Inc.',
-                  style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 11),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 11),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -456,22 +456,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Text(
                       'Điều khoản dịch vụ',
-                      style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
                     ),
                     Text(
                       '  •  ',
-                      style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
                     ),
                     Text(
                       'Chính sách bảo mật',
-                      style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '© 2024 SmartHome IoT Hub. Bảo lưu mọi quyền.',
-                  style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 11),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 11),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -613,8 +613,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFF3B82F6).withOpacity(0.15)
-                        : const Color(0xFF2A2F46).withOpacity(0.5),
+                        ? const Color(0xFF3B82F6).withValues(alpha: 0.15)
+                        : const Color(0xFF2A2F46).withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -653,7 +653,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Text(
               subtitle,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 fontSize: 11,
               ),
               textAlign: TextAlign.center,
@@ -670,7 +670,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
