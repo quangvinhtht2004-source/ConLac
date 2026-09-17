@@ -2,8 +2,12 @@ package com.smarthome.backend.service;
 
 import com.smarthome.backend.dto.ThietBiRequest;
 import com.smarthome.backend.dto.ThietBiResponse;
+import com.smarthome.backend.entity.LichSuHoatDong;
+import com.smarthome.backend.entity.NguoiDung;
 import com.smarthome.backend.entity.Phong;
 import com.smarthome.backend.entity.ThietBi;
+import com.smarthome.backend.repository.LichSuHoatDongRepository;
+import com.smarthome.backend.repository.NguoiDungRepository;
 import com.smarthome.backend.repository.PhongRepository;
 import com.smarthome.backend.repository.ThietBiRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,13 +20,39 @@ import java.util.List;
 public class ThietBiService {
 
     private static final String TRANG_THAI_MAC_DINH = "Tat";
+    private static final String NGUON_NGUOI_DUNG = "NguoiDung";
 
     private final ThietBiRepository thietBiRepository;
     private final PhongRepository phongRepository;
+    private final LichSuHoatDongRepository lichSuHoatDongRepository;
+    private final NguoiDungRepository nguoiDungRepository;
 
-    public ThietBiService(ThietBiRepository thietBiRepository, PhongRepository phongRepository) {
+    public ThietBiService(ThietBiRepository thietBiRepository,
+                           PhongRepository phongRepository,
+                           LichSuHoatDongRepository lichSuHoatDongRepository,
+                           NguoiDungRepository nguoiDungRepository) {
         this.thietBiRepository = thietBiRepository;
         this.phongRepository = phongRepository;
+        this.lichSuHoatDongRepository = lichSuHoatDongRepository;
+        this.nguoiDungRepository = nguoiDungRepository;
+    }
+
+    public ThietBiResponse dieuKhien(Integer maThietBi, String hanhDong, String tenDangNhap) {
+        ThietBi thietBi = timHoacLoi(maThietBi);
+        thietBi.setTrangThai(hanhDong);
+        thietBiRepository.save(thietBi);
+
+        NguoiDung nguoiDung = nguoiDungRepository.findByTenDangNhap(tenDangNhap).orElse(null);
+
+        LichSuHoatDong lichSu = new LichSuHoatDong();
+        lichSu.setThietBi(thietBi);
+        lichSu.setNguoiDung(nguoiDung);
+        lichSu.setHanhDong(hanhDong);
+        lichSu.setNguon(NGUON_NGUOI_DUNG);
+        lichSu.setThoiGian(LocalDateTime.now());
+        lichSuHoatDongRepository.save(lichSu);
+
+        return toResponse(thietBi);
     }
 
     public List<ThietBiResponse> danhSachTheoPhong(Integer maPhong) {
