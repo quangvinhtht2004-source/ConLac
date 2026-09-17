@@ -1,13 +1,16 @@
 package com.smarthome.backend.controller;
 
+import com.smarthome.backend.dto.DieuKhienRequest;
 import com.smarthome.backend.dto.ThietBiRequest;
 import com.smarthome.backend.dto.ThietBiResponse;
 import com.smarthome.backend.service.ThietBiService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -55,5 +58,13 @@ public class ThietBiController {
     public ResponseEntity<Void> xoa(@PathVariable Integer maThietBi) {
         thietBiService.xoaThietBi(maThietBi);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{maThietBi}/dieu-khien")
+    public ResponseEntity<ThietBiResponse> dieuKhien(@PathVariable Integer maThietBi,
+                                                       @Valid @RequestBody DieuKhienRequest request,
+                                                       Authentication authentication) {
+        ThietBiResponse response = thietBiService.dieuKhien(maThietBi, request.getHanhDong(), authentication.getName());
+        return ResponseEntity.ok(response);
     }
 }
