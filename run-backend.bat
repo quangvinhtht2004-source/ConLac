@@ -54,7 +54,7 @@ if "%MVN_CMD%"=="" (
 echo [3/5] Kiem tra file cau hinh .env...
 if exist ".env" (
     echo   [OK] Da tim thay file .env tai: %CD%\.env
-    echo        Cac bien moi truong (DB_PASSWORD, JWT_SECRET, DEVICE_API_KEY...) se duoc tu dong nap boi spring-dotenv.
+    echo        Cac bien moi truong: DB_PASSWORD, JWT_SECRET, DEVICE_API_KEY... se duoc tu dong nap boi spring-dotenv.
 ) else (
     echo   [CANH BAO] Khong tim thay file .env tai: %CD%\.env
     echo   Luu y: Neu chua set bien moi truong he thong, Spring Boot se bao loi

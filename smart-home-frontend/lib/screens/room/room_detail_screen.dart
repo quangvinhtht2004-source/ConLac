@@ -572,6 +572,194 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
     );
   }
 
+  // Hộp thoại thêm cảm biến mới vào phòng (Admin): POST /api/cam-bien
+  void _showAddSensorDialog(BuildContext context) {
+    String selectedType = 'NhietDo';
+    int? selectedDeviceId;
+    final auth = context.read<AuthProvider>();
+    final roomProv = context.read<RoomProvider>();
+    final currentRoom = roomProv.selectedRoom ?? widget.room;
+    final devices = roomProv.currentRoomDevices;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1F36),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.sensors, color: Colors.blueAccent),
+              SizedBox(width: 8),
+              Text(
+                'Thêm cảm biến mới',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Chọn loại cảm biến (gọi POST /api/cam-bien):',
+                  style: TextStyle(color: Color(0xFF8D8FA1), fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A0E21),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF2A2F46)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedType,
+                      isExpanded: true,
+                      dropdownColor: const Color(0xFF1A1F36),
+                      style: const TextStyle(color: Colors.white),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'NhietDo',
+                          child: Text('🌡️ Cảm biến Nhiệt độ (NhietDo)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'DoAm',
+                          child: Text('💧 Cảm biến Độ ẩm (DoAm)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ChuyenDong',
+                          child: Text('🚶 Cảm biến Chuyển động (ChuyenDong)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Cua',
+                          child: Text('🚪 Cảm biến Cửa (Cua)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Khoi',
+                          child: Text('💨 Cảm biến Khói / Cháy (Khoi)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'RoRiNuoc',
+                          child: Text('💦 Cảm biến Rò rỉ nước (RoRiNuoc)'),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            selectedType = val;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Liên kết thiết bị (tùy chọn):',
+                  style: TextStyle(color: Color(0xFF8D8FA1), fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A0E21),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF2A2F46)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int?>(
+                      value: selectedDeviceId,
+                      isExpanded: true,
+                      dropdownColor: const Color(0xFF1A1F36),
+                      style: const TextStyle(color: Colors.white),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('-- Không liên kết thiết bị --'),
+                        ),
+                        ...devices.map(
+                          (d) => DropdownMenuItem<int?>(
+                            value: d.maThietBi,
+                            child: Text('${d.tenThietBi} (#${d.maThietBi})'),
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        setDialogState(() {
+                          selectedDeviceId = val;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Cảm biến sẽ được gán trực tiếp vào ${currentRoom.tenPhong} (Mã phòng: ${currentRoom.maPhong}).',
+                  style: const TextStyle(
+                    color: Color(0xFF8D8FA1),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'Hủy',
+                style: TextStyle(color: Color(0xFF8D8FA1)),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final messenger = ScaffoldMessenger.of(context);
+                final ok = await roomProv.createSensor(
+                  loaiCamBien: selectedType,
+                  maPhong: currentRoom.maPhong,
+                  maThietBi: selectedDeviceId,
+                  token: auth.user?.token,
+                );
+                if (mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        ok
+                            ? 'Đã thêm cảm biến thành công vào ${currentRoom.tenPhong}!'
+                            : (roomProv.errorMessage ??
+                                  'Thêm cảm biến thất bại'),
+                      ),
+                      backgroundColor: ok
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: const Text(
+                'Thêm cảm biến',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -680,7 +868,16 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                 const SizedBox(height: 20),
 
                 // === MÔI TRƯỜNG PHÒNG (Nhiệt độ, Độ ẩm, kWh) ===
-                _buildRoomEnvironment(),
+                _buildRoomEnvironment(roomProv),
+                const SizedBox(height: 16),
+
+                // === CẢM BIẾN TRONG PHÒNG (GET/POST /api/cam-bien) ===
+                _buildRoomSensorsSection(
+                  context,
+                  roomProv,
+                  isAdmin,
+                  auth.user?.token,
+                ),
                 const SizedBox(height: 20),
 
                 // === KỊCH BẢN NHANH (Bật hết, Tắt hết, Thư giãn) ===
@@ -813,7 +1010,10 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
     );
   }
 
-  Widget _buildRoomEnvironment() {
+  Widget _buildRoomEnvironment(RoomProvider roomProv) {
+    final hasTemp = roomProv.hasRealTemperature;
+    final hasHum = roomProv.hasRealHumidity;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -843,13 +1043,24 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                   color: const Color(0xFF0A0E21),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.circle, color: Color(0xFF06B6D4), size: 6),
-                    SizedBox(width: 4),
+                    Icon(
+                      Icons.circle,
+                      color: (hasTemp || hasHum)
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF06B6D4),
+                      size: 6,
+                    ),
+                    const SizedBox(width: 4),
                     Text(
-                      'Chuyển động (2p trước)',
-                      style: TextStyle(color: Color(0xFF8D8FA1), fontSize: 10),
+                      (hasTemp || hasHum)
+                          ? 'Dữ liệu CSDL thời gian thực'
+                          : 'Chuyển động (2p trước)',
+                      style: const TextStyle(
+                        color: Color(0xFF8D8FA1),
+                        fontSize: 10,
+                      ),
                     ),
                   ],
                 ),
@@ -859,24 +1070,24 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              // Nhiệt độ
+              // Nhiệt độ (GET /api/cam-bien/{id}/hien-tai)
               Expanded(
                 child: _buildEnvMiniCard(
                   icon: Icons.thermostat,
                   iconColor: Colors.amber,
-                  tag: 'Lý tưởng',
-                  value: '26.8°',
+                  tag: hasTemp ? 'Đo thật CSDL' : 'Lý tưởng',
+                  value: roomProv.currentRoomTemperature,
                   label: 'Nhiệt độ',
                 ),
               ),
               const SizedBox(width: 8),
-              // Độ ẩm
+              // Độ ẩm (GET /api/cam-bien/{id}/hien-tai)
               Expanded(
                 child: _buildEnvMiniCard(
                   icon: Icons.water_drop,
                   iconColor: Colors.lightBlueAccent,
-                  tag: 'Dễ chịu',
-                  value: '58%',
+                  tag: hasHum ? 'Đo thật CSDL' : 'Dễ chịu',
+                  value: roomProv.currentRoomHumidity,
                   label: 'Độ ẩm',
                 ),
               ),
@@ -942,6 +1153,289 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
             style: const TextStyle(color: Color(0xFF8D8FA1), fontSize: 10),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRoomSensorsSection(
+    BuildContext context,
+    RoomProvider roomProv,
+    bool isAdmin,
+    String? token,
+  ) {
+    final sensors = roomProv.currentRoomSensors;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F36),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF2A2F46)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.sensors, color: Colors.blueAccent, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                'CẢM BIẾN TRONG PHÒNG',
+                style: TextStyle(
+                  color: Color(0xFF8D8FA1),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A0E21),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${sensors.length}',
+                  style: const TextStyle(
+                    color: Colors.blueAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              if (isAdmin)
+                InkWell(
+                  onTap: () => _showAddSensorDialog(context),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.add, color: Colors.blueAccent, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'Thêm cảm biến',
+                          style: TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (sensors.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0A0E21),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    color: Color(0xFF8D8FA1),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Chưa có cảm biến nào trong phòng này.',
+                      style: TextStyle(color: Color(0xFF8D8FA1), fontSize: 12),
+                    ),
+                  ),
+                  if (isAdmin)
+                    TextButton(
+                      onPressed: () => _showAddSensorDialog(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Thêm ngay',
+                        style: TextStyle(
+                          color: Colors.blueAccent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: sensors.map((sensor) {
+                  return _buildSensorCard(context, sensor, roomProv, token);
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showSensorDetailDialog(
+    BuildContext context,
+    SensorItem sensor,
+    RoomProvider roomProv,
+    String? token,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) =>
+          _SensorDetailDialog(sensor: sensor, roomProv: roomProv, token: token),
+    );
+  }
+
+  Widget _buildSensorCard(
+    BuildContext context,
+    SensorItem sensor,
+    RoomProvider roomProv,
+    String? token,
+  ) {
+    IconData icon = Icons.sensors;
+    Color color = Colors.blueAccent;
+
+    switch (sensor.loaiCamBien) {
+      case 'NhietDo':
+        icon = Icons.thermostat;
+        color = Colors.amber;
+        break;
+      case 'DoAm':
+        icon = Icons.water_drop;
+        color = Colors.lightBlueAccent;
+        break;
+      case 'ChuyenDong':
+        icon = Icons.directions_walk;
+        color = Colors.cyanAccent;
+        break;
+      case 'Cua':
+        icon = Icons.door_sliding;
+        color = Colors.tealAccent;
+        break;
+      case 'Khoi':
+        icon = Icons.local_fire_department;
+        color = Colors.redAccent;
+        break;
+      case 'RoRiNuoc':
+        icon = Icons.water_damage;
+        color = Colors.indigoAccent;
+        break;
+    }
+
+    final reading = roomProv.latestSensorReadings[sensor.maCamBien];
+    final hasReading = reading != null;
+    final displayValue = hasReading
+        ? reading.formatValue(sensor.loaiCamBien)
+        : 'Chưa có số liệu';
+
+    return InkWell(
+      onTap: () => _showSensorDetailDialog(context, sensor, roomProv, token),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 155,
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0E21),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: hasReading
+                ? color.withValues(alpha: 0.4)
+                : const Color(0xFF2A2F46),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 16),
+                ),
+                const Spacer(),
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: hasReading
+                        ? Colors.greenAccent
+                        : const Color(0xFF8D8FA1),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              sensor.tenLoaiHienThi,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              displayValue,
+              style: TextStyle(
+                color: hasReading ? color : const Color(0xFF8D8FA1),
+                fontSize: hasReading ? 15 : 11,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text(
+                  '#${sensor.maCamBien}',
+                  style: const TextStyle(
+                    color: Color(0xFF8D8FA1),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.touch_app_outlined,
+                  color: Color(0xFF8D8FA1),
+                  size: 13,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1219,7 +1713,21 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                   activeTrackColor: const Color(0xFF3B82F6),
                   inactiveThumbColor: const Color(0xFF8D8FA1),
                   inactiveTrackColor: const Color(0xFF0A0E21),
-                  onChanged: (_) => roomProv.toggleDevice(device),
+                  onChanged: (_) async {
+                    final ok = await roomProv.toggleDevice(device, token);
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            roomProv.errorMessage ??
+                                'Điều khiển thiết bị thất bại',
+                          ),
+                          backgroundColor: Colors.red.shade700,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
 
@@ -1468,6 +1976,345 @@ class _DeviceDetailDialogState extends State<_DeviceDetailDialog> {
             ],
           );
         },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Đóng', style: TextStyle(color: Color(0xFF8D8FA1))),
+        ),
+      ],
+    );
+  }
+}
+
+/// Hộp thoại hiển thị chi tiết cảm biến và mô phỏng gửi dữ liệu đo thời gian thực
+class _SensorDetailDialog extends StatefulWidget {
+  final SensorItem sensor;
+  final RoomProvider roomProv;
+  final String? token;
+
+  const _SensorDetailDialog({
+    required this.sensor,
+    required this.roomProv,
+    required this.token,
+  });
+
+  @override
+  State<_SensorDetailDialog> createState() => _SensorDetailDialogState();
+}
+
+class _SensorDetailDialogState extends State<_SensorDetailDialog> {
+  late TextEditingController _simController;
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final reading =
+        widget.roomProv.latestSensorReadings[widget.sensor.maCamBien];
+    final defaultVal = reading != null
+        ? reading.giaTri.toString()
+        : (widget.sensor.loaiCamBien == 'NhietDo'
+              ? '28.5'
+              : widget.sensor.loaiCamBien == 'DoAm'
+              ? '65'
+              : '1');
+    _simController = TextEditingController(text: defaultVal);
+  }
+
+  @override
+  void dispose() {
+    _simController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: Color(0xFF8D8FA1), fontSize: 13),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: valueColor ?? Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendSimulatedValue(double val) async {
+    setState(() => _isSending = true);
+    final ok = await widget.roomProv.simulateSensorData(
+      maCamBien: widget.sensor.maCamBien,
+      giaTri: val,
+      token: widget.token,
+    );
+    if (!mounted) return;
+    setState(() {
+      _isSending = false;
+      _simController.text = val.toString();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Đã ghi nhận giá trị mới ($val) vào CSDL thành công!'
+              : 'Ghi nhận thất bại',
+        ),
+        backgroundColor: ok ? Colors.green.shade700 : Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reading =
+        widget.roomProv.latestSensorReadings[widget.sensor.maCamBien];
+    final hasReading = reading != null;
+
+    return AlertDialog(
+      backgroundColor: const Color(0xFF1A1F36),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          const Icon(Icons.sensors, color: Colors.blueAccent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${widget.sensor.tenLoaiHienThi} (#${widget.sensor.maCamBien})',
+              style: const TextStyle(color: Colors.white, fontSize: 17),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Thông tin chi tiết từ GET /api/cam-bien:',
+              style: TextStyle(color: Color(0xFF8D8FA1), fontSize: 12),
+            ),
+            const SizedBox(height: 10),
+            _buildRow('Mã cảm biến (ID)', '#${widget.sensor.maCamBien}'),
+            _buildRow('Loại cảm biến', widget.sensor.tenLoaiHienThi),
+            _buildRow('Mã hệ thống', widget.sensor.loaiCamBien),
+            _buildRow(
+              'Thiết bị liên kết',
+              widget.sensor.maThietBi != null
+                  ? '#${widget.sensor.maThietBi}'
+                  : 'Không có',
+            ),
+            const Divider(color: Color(0xFF2A2F46), height: 20),
+            const Text(
+              'Dữ liệu hiện tại (GET /api/cam-bien/{id}/hien-tai):',
+              style: TextStyle(color: Color(0xFF8D8FA1), fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            _buildRow(
+              'Giá trị đo',
+              hasReading
+                  ? reading.formatValue(widget.sensor.loaiCamBien)
+                  : 'Chưa có số liệu',
+              valueColor: hasReading ? Colors.greenAccent : Colors.amber,
+            ),
+            if (hasReading && reading.thoiGianGhiNhan != null)
+              _buildRow(
+                'Thời gian ghi nhận',
+                reading.thoiGianGhiNhan.toString().split('.').first,
+              ),
+            const Divider(color: Color(0xFF2A2F46), height: 24),
+
+            // Khu vực mô phỏng gửi dữ liệu IoT
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0A0E21),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.blueAccent.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.bolt, color: Colors.amber, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'MÔ PHỎNG THIẾT BỊ GỬI SỐ LIỆU',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Gọi POST /api/cam-bien/ingest để ghi dữ liệu mới vào CSDL:',
+                    style: TextStyle(color: Color(0xFF8D8FA1), fontSize: 11),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Nút gợi ý nhanh
+                  if (widget.sensor.loaiCamBien == 'NhietDo')
+                    Wrap(
+                      spacing: 6,
+                      children: [24.0, 27.5, 30.0, 33.5].map((val) {
+                        return ActionChip(
+                          label: Text('$val°C'),
+                          onPressed: _isSending
+                              ? null
+                              : () => _sendSimulatedValue(val),
+                          backgroundColor: const Color(0xFF1A1F36),
+                          labelStyle: const TextStyle(
+                            color: Colors.amber,
+                            fontSize: 11,
+                          ),
+                          side: const BorderSide(color: Color(0xFF2A2F46)),
+                        );
+                      }).toList(),
+                    )
+                  else if (widget.sensor.loaiCamBien == 'DoAm')
+                    Wrap(
+                      spacing: 6,
+                      children: [45.0, 60.0, 75.0, 85.0].map((val) {
+                        return ActionChip(
+                          label: Text('${val.toInt()}%'),
+                          onPressed: _isSending
+                              ? null
+                              : () => _sendSimulatedValue(val),
+                          backgroundColor: const Color(0xFF1A1F36),
+                          labelStyle: const TextStyle(
+                            color: Colors.lightBlueAccent,
+                            fontSize: 11,
+                          ),
+                          side: const BorderSide(color: Color(0xFF2A2F46)),
+                        );
+                      }).toList(),
+                    )
+                  else
+                    Wrap(
+                      spacing: 6,
+                      children: [1.0, 0.0].map((val) {
+                        return ActionChip(
+                          label: Text(
+                            val > 0 ? 'Kích hoạt (1.0)' : 'Tắt (0.0)',
+                          ),
+                          onPressed: _isSending
+                              ? null
+                              : () => _sendSimulatedValue(val),
+                          backgroundColor: const Color(0xFF1A1F36),
+                          labelStyle: TextStyle(
+                            color: val > 0
+                                ? Colors.greenAccent
+                                : Colors.redAccent,
+                            fontSize: 11,
+                          ),
+                          side: const BorderSide(color: Color(0xFF2A2F46)),
+                        );
+                      }).toList(),
+                    ),
+
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _simController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Nhập số đo...',
+                            hintStyle: const TextStyle(
+                              color: Color(0xFF8D8FA1),
+                            ),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF1A1F36),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF2A2F46),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: _isSending
+                            ? null
+                            : () {
+                                final val = double.tryParse(
+                                  _simController.text.trim(),
+                                );
+                                if (val != null) {
+                                  _sendSimulatedValue(val);
+                                }
+                              },
+                        child: _isSending
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Gửi đo',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(

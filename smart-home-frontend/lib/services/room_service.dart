@@ -88,7 +88,16 @@ class RoomService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('Xóa phòng thất bại');
+      try {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final msg = data['message'] ?? 'Xóa phòng thất bại';
+        throw Exception(msg);
+      } catch (e) {
+        if (e is Exception && !e.toString().contains('FormatException')) {
+          rethrow;
+        }
+        throw Exception('Xóa phòng thất bại (Mã lỗi ${response.statusCode})');
+      }
     }
   }
 
@@ -248,5 +257,154 @@ class RoomService {
       final msg = data['message'] ?? 'Cập nhật thiết bị thất bại';
       throw Exception(msg);
     }
+  }
+
+  /// Điều khiển BẬT / TẮT thiết bị: PATCH /api/thiet-bi/{maThietBi}/dieu-khien
+  Future<DeviceItem> controlDevice(
+    int maThietBi,
+    String hanhDong,
+    String token,
+  ) async {
+    final url = Uri.parse('${ApiConfig.devicesEndpoint}/$maThietBi/dieu-khien');
+    final response = await http.patch(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'hanhDong': hanhDong}),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(
+        utf8.decode(response.bodyBytes),
+      );
+      return DeviceItem.fromJson(data);
+    } else {
+      try {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final msg = data['message'] ?? 'Điều khiển thiết bị thất bại';
+        throw Exception(msg);
+      } catch (e) {
+        if (e is Exception && !e.toString().contains('FormatException')) {
+          rethrow;
+        }
+        throw Exception(
+          'Điều khiển thiết bị thất bại (Mã lỗi ${response.statusCode})',
+        );
+      }
+    }
+  }
+
+  /// Lấy danh sách cảm biến theo phòng: GET /api/cam-bien?maPhong={maPhong}
+  Future<List<SensorItem>> getSensorsByRoom(int maPhong, String token) async {
+    final url = Uri.parse('${ApiConfig.sensorsEndpoint}?maPhong=$maPhong');
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data
+          .map((json) => SensorItem.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception(
+        'Không thể tải danh sách cảm biến: ${response.statusCode}',
+      );
+    }
+  }
+
+  /// Thêm cảm biến mới vào phòng (Admin): POST /api/cam-bien
+  Future<SensorItem> createSensor({
+    required String loaiCamBien,
+    required int maPhong,
+    int? maThietBi,
+    required String token,
+  }) async {
+    final url = Uri.parse(ApiConfig.sensorsEndpoint);
+    final bodyData = <String, dynamic>{
+      'loaiCamBien': loaiCamBien,
+      'maPhong': maPhong,
+    };
+    if (maThietBi != null) {
+      bodyData['maThietBi'] = maThietBi;
+    }
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(bodyData),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final Map<String, dynamic> data = jsonDecode(
+        utf8.decode(response.bodyBytes),
+      );
+      return SensorItem.fromJson(data);
+    } else {
+      try {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final msg = data['message'] ?? 'Thêm cảm biến thất bại';
+        throw Exception(msg);
+      } catch (e) {
+        if (e is Exception && !e.toString().contains('FormatException')) {
+          rethrow;
+        }
+        throw Exception(
+          'Thêm cảm biến thất bại (Mã lỗi ${response.statusCode})',
+        );
+      }
+    }
+  }
+
+  /// Lấy giá trị hiện tại của cảm biến: GET /api/cam-bien/{maCamBien}/hien-tai
+  Future<SensorReading?> getLatestSensorReading(
+    int maCamBien,
+    String token,
+  ) async {
+    final url = Uri.parse('${ApiConfig.sensorsEndpoint}/$maCamBien/hien-tai');
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) return null;
+      final Map<String, dynamic> data = jsonDecode(
+        utf8.decode(response.bodyBytes),
+      );
+      return SensorReading.fromJson(data);
+    } else if (response.statusCode == 204) {
+      return null;
+    } else {
+      throw Exception('Không thể lấy giá trị cảm biến: ${response.statusCode}');
+    }
+  }
+
+  /// Mô phỏng thiết bị IoT gửi dữ liệu đo: POST /api/cam-bien/ingest
+  Future<bool> ingestSensorData({
+    required int maCamBien,
+    required double giaTri,
+    String apiKey = 'doi_thanh_khoa_rieng_cho_thiet_bi_iot',
+  }) async {
+    final url = Uri.parse('${ApiConfig.sensorsEndpoint}/ingest');
+    final response = await http.post(
+      url,
+      headers: {'X-Device-Key': apiKey, 'Content-Type': 'application/json'},
+      body: jsonEncode({'maCamBien': maCamBien, 'giaTri': giaTri}),
+    );
+
+    return response.statusCode == 200;
   }
 }

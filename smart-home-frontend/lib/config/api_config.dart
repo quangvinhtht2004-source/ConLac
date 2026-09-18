@@ -18,4 +18,5 @@ class ApiConfig {
   static const String adminPingEndpoint = '$baseUrl/api/admin/ping';
   static const String roomsEndpoint = '$baseUrl/api/phong';
   static const String devicesEndpoint = '$baseUrl/api/thiet-bi';
+  static const String sensorsEndpoint = '$baseUrl/api/cam-bien';
 }

@@ -9,12 +9,51 @@ class RoomProvider extends ChangeNotifier {
   List<Room> _rooms = [];
   Room? _selectedRoom;
   List<DeviceItem> _currentRoomDevices = [];
+  List<SensorItem> _currentRoomSensors = [];
+  final Map<int, SensorReading> _latestSensorReadings = {};
   bool _isLoading = false;
   String? _errorMessage;
 
   List<Room> get rooms => _rooms;
   Room? get selectedRoom => _selectedRoom;
   List<DeviceItem> get currentRoomDevices => _currentRoomDevices;
+  List<SensorItem> get currentRoomSensors => _currentRoomSensors;
+  Map<int, SensorReading> get latestSensorReadings => _latestSensorReadings;
+
+  SensorReading? get currentTemperatureReading {
+    final sensor = _currentRoomSensors.cast<SensorItem?>().firstWhere(
+      (s) => s?.loaiCamBien == 'NhietDo',
+      orElse: () => null,
+    );
+    if (sensor == null) return null;
+    return _latestSensorReadings[sensor.maCamBien];
+  }
+
+  SensorReading? get currentHumidityReading {
+    final sensor = _currentRoomSensors.cast<SensorItem?>().firstWhere(
+      (s) => s?.loaiCamBien == 'DoAm',
+      orElse: () => null,
+    );
+    if (sensor == null) return null;
+    return _latestSensorReadings[sensor.maCamBien];
+  }
+
+  String get currentRoomTemperature {
+    if (currentTemperatureReading != null) {
+      return '${currentTemperatureReading!.giaTri.toStringAsFixed(1)}°';
+    }
+    return '26.8°';
+  }
+
+  String get currentRoomHumidity {
+    if (currentHumidityReading != null) {
+      return '${currentHumidityReading!.giaTri.toStringAsFixed(0)}%';
+    }
+    return '58%';
+  }
+
+  bool get hasRealTemperature => currentTemperatureReading != null;
+  bool get hasRealHumidity => currentHumidityReading != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -200,6 +239,7 @@ class RoomProvider extends ChangeNotifier {
         if (idx != -1) {
           _rooms[idx] = detail;
         }
+        await fetchSensorsByRoom(room.maPhong, token);
         notifyListeners();
       } catch (_) {
         // Fallback: nếu lấy chi tiết phòng lỗi thì thử lấy danh sách thiết bị
@@ -215,6 +255,7 @@ class RoomProvider extends ChangeNotifier {
             notifyListeners();
           }
         } catch (_) {}
+        await fetchSensorsByRoom(room.maPhong, token);
       }
     }
   }
@@ -236,27 +277,74 @@ class RoomProvider extends ChangeNotifier {
       if (index != -1) {
         _rooms[index] = roomDetail;
       }
+      await fetchSensorsByRoom(maPhong, token);
       _isLoading = false;
       notifyListeners();
       return roomDetail;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      await fetchSensorsByRoom(maPhong, token);
       _isLoading = false;
       notifyListeners();
       return _selectedRoom;
     }
   }
 
-  /// Gạt switch BẬT / TẮT thiết bị
-  void toggleDevice(DeviceItem device) {
-    device.toggleStatus();
+  /// Gạt switch BẬT / TẮT thiết bị: PATCH /api/thiet-bi/{id}/dieu-khien
+  Future<bool> toggleDevice(DeviceItem device, String? token) async {
+    final oldStatus = device.trangThai;
+    final nextStatus = device.isOn ? 'Tat' : 'Bat';
+
+    // 1. Optimistic update: Gạt ngay trên màn hình để UX mượt mà
+    device.trangThai = nextStatus;
     notifyListeners();
+
+    if (token == null) return true;
+
+    try {
+      final updated = await _roomService.controlDevice(
+        device.maThietBi,
+        nextStatus,
+        token,
+      );
+
+      // Cập nhật trạng thái chuẩn xác từ backend
+      device.trangThai = updated.trangThai;
+
+      if (_selectedRoom != null) {
+        final idx = _selectedRoom!.danhSachThietBi.indexWhere(
+          (d) => d.maThietBi == device.maThietBi,
+        );
+        if (idx != -1) {
+          _selectedRoom!.danhSachThietBi[idx].trangThai = updated.trangThai;
+        }
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      // Rollback lại trạng thái cũ nếu lỗi
+      device.trangThai = oldStatus;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Bật hết / Tắt hết thiết bị trong phòng
-  void setAllDevicesState(bool turnOn) {
+  Future<void> setAllDevicesState(bool turnOn, [String? token]) async {
+    final targetStatus = turnOn ? 'Bat' : 'Tat';
     for (var device in _currentRoomDevices) {
-      device.trangThai = turnOn ? 'Bat' : 'Tat';
+      device.trangThai = targetStatus;
+    }
+    notifyListeners();
+
+    if (token == null) return;
+
+    for (var device in _currentRoomDevices) {
+      try {
+        await _roomService.controlDevice(device.maThietBi, targetStatus, token);
+      } catch (_) {}
     }
     notifyListeners();
   }
@@ -328,21 +416,25 @@ class RoomProvider extends ChangeNotifier {
     if (token == null) return false;
 
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
       await _roomService.deleteRoom(maPhong, token);
+      _rooms.removeWhere((r) => r.maPhong == maPhong);
+      if (_selectedRoom?.maPhong == maPhong) {
+        _selectedRoom = null;
+        _currentRoomDevices.clear();
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
-      // Nếu phòng không có trên server (dữ liệu mẫu demo), vẫn xóa khỏi giao diện
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
-    _rooms.removeWhere((r) => r.maPhong == maPhong);
-    if (_selectedRoom?.maPhong == maPhong) {
-      _selectedRoom = null;
-      _currentRoomDevices.clear();
-    }
-    _isLoading = false;
-    notifyListeners();
-    return true;
   }
 
   /// Cập nhật thông tin / đổi tên phòng (Admin): PUT /api/phong/{maPhong}
@@ -471,5 +563,119 @@ class RoomProvider extends ChangeNotifier {
     _currentRoomDevices.removeWhere((d) => d.maThietBi == maThietBi);
     _selectedRoom?.danhSachThietBi.removeWhere((d) => d.maThietBi == maThietBi);
     notifyListeners();
+  }
+
+  /// Tải danh sách cảm biến theo phòng: GET /api/cam-bien?maPhong={maPhong}
+  Future<void> fetchSensorsByRoom(int maPhong, String? token) async {
+    if (token == null || token.isEmpty) {
+      _currentRoomSensors = [];
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final list = await _roomService.getSensorsByRoom(maPhong, token);
+      _currentRoomSensors = list;
+      notifyListeners();
+      await fetchAllSensorReadings(token);
+    } catch (_) {
+      _currentRoomSensors = [];
+      notifyListeners();
+    }
+  }
+
+  /// Lấy giá trị đo hiện tại của tất cả cảm biến trong phòng: GET /api/cam-bien/{id}/hien-tai
+  Future<void> fetchAllSensorReadings(String? token) async {
+    if (token == null || token.isEmpty || _currentRoomSensors.isEmpty) return;
+
+    for (var sensor in _currentRoomSensors) {
+      try {
+        final reading = await _roomService.getLatestSensorReading(
+          sensor.maCamBien,
+          token,
+        );
+        if (reading != null) {
+          _latestSensorReadings[sensor.maCamBien] = reading;
+        }
+      } catch (_) {}
+    }
+    notifyListeners();
+  }
+
+  /// Lấy giá trị đo của 1 cảm biến đơn lẻ: GET /api/cam-bien/{id}/hien-tai
+  Future<SensorReading?> fetchSensorReading(
+    int maCamBien,
+    String? token,
+  ) async {
+    if (token == null || token.isEmpty) {
+      return _latestSensorReadings[maCamBien];
+    }
+    try {
+      final reading = await _roomService.getLatestSensorReading(
+        maCamBien,
+        token,
+      );
+      if (reading != null) {
+        _latestSensorReadings[maCamBien] = reading;
+        notifyListeners();
+      }
+      return reading;
+    } catch (_) {
+      return _latestSensorReadings[maCamBien];
+    }
+  }
+
+  /// Mô phỏng thiết bị IoT gửi dữ liệu đo: POST /api/cam-bien/ingest
+  Future<bool> simulateSensorData({
+    required int maCamBien,
+    required double giaTri,
+    required String? token,
+  }) async {
+    try {
+      final ok = await _roomService.ingestSensorData(
+        maCamBien: maCamBien,
+        giaTri: giaTri,
+      );
+      if (ok && token != null) {
+        await fetchSensorReading(maCamBien, token);
+      }
+      return ok;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    }
+  }
+
+  /// Thêm cảm biến mới vào phòng (Admin): POST /api/cam-bien
+  Future<bool> createSensor({
+    required String loaiCamBien,
+    required int maPhong,
+    int? maThietBi,
+    required String? token,
+  }) async {
+    if (token == null || token.isEmpty) return false;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final newSensor = await _roomService.createSensor(
+        loaiCamBien: loaiCamBien,
+        maPhong: maPhong,
+        maThietBi: maThietBi,
+        token: token,
+      );
+      _currentRoomSensors.add(newSensor);
+      await fetchSensorReading(newSensor.maCamBien, token);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

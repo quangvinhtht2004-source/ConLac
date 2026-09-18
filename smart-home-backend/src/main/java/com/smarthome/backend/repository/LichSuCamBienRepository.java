@@ -11,4 +11,5 @@ public interface LichSuCamBienRepository extends JpaRepository<LichSuCamBien, Lo
     Optional<LichSuCamBien> findTopByCamBien_MaCamBienOrderByThoiGianGhiNhanDesc(Integer maCamBien);
     List<LichSuCamBien> findByCamBien_MaCamBienAndThoiGianGhiNhanBetweenOrderByThoiGianGhiNhanAsc(
             Integer maCamBien, LocalDateTime tu, LocalDateTime den);
+    void deleteByCamBien_MaCamBien(Integer maCamBien);
 }

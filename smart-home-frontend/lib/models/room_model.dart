@@ -113,3 +113,104 @@ class Room {
     );
   }
 }
+
+class SensorItem {
+  final int maCamBien;
+  final String loaiCamBien;
+  final int maPhong;
+  final String? tenPhong;
+  final int? maThietBi;
+  final String? ngayTao;
+
+  SensorItem({
+    required this.maCamBien,
+    required this.loaiCamBien,
+    required this.maPhong,
+    this.tenPhong,
+    this.maThietBi,
+    this.ngayTao,
+  });
+
+  String get tenLoaiHienThi {
+    switch (loaiCamBien) {
+      case 'NhietDo':
+        return 'Nhiệt độ';
+      case 'DoAm':
+        return 'Độ ẩm';
+      case 'ChuyenDong':
+        return 'Chuyển động';
+      case 'Cua':
+        return 'Cửa';
+      case 'Khoi':
+        return 'Khói / Cháy';
+      case 'RoRiNuoc':
+        return 'Rò rỉ nước';
+      default:
+        return loaiCamBien;
+    }
+  }
+
+  factory SensorItem.fromJson(Map<String, dynamic> json) {
+    return SensorItem(
+      maCamBien: json['maCamBien'] as int,
+      loaiCamBien: (json['loaiCamBien'] ?? 'NhietDo') as String,
+      maPhong: (json['maPhong'] ?? 0) as int,
+      tenPhong: json['tenPhong'] as String?,
+      maThietBi: json['maThietBi'] as int?,
+      ngayTao: json['ngayTao'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'maCamBien': maCamBien,
+      'loaiCamBien': loaiCamBien,
+      'maPhong': maPhong,
+      if (maThietBi != null) 'maThietBi': maThietBi,
+      if (ngayTao != null) 'ngayTao': ngayTao,
+    };
+  }
+}
+
+class SensorReading {
+  final double giaTri;
+  final DateTime? thoiGianGhiNhan;
+
+  SensorReading({required this.giaTri, this.thoiGianGhiNhan});
+
+  String formatValue(String loaiCamBien) {
+    switch (loaiCamBien) {
+      case 'NhietDo':
+        return '${giaTri.toStringAsFixed(1)}°C';
+      case 'DoAm':
+        return '${giaTri.toStringAsFixed(0)}%';
+      case 'ChuyenDong':
+        return giaTri > 0 ? 'Có chuyển động' : 'Không có';
+      case 'Cua':
+        return giaTri > 0 ? 'Đang mở' : 'Đang đóng';
+      case 'Khoi':
+        return giaTri > 0 ? 'CẢNH BÁO KHÓI' : 'An toàn';
+      case 'RoRiNuoc':
+        return giaTri > 0 ? 'RÒ RỈ NƯỚC' : 'Bình thường';
+      default:
+        return giaTri.toStringAsFixed(1);
+    }
+  }
+
+  factory SensorReading.fromJson(Map<String, dynamic> json) {
+    return SensorReading(
+      giaTri: (json['giaTri'] as num).toDouble(),
+      thoiGianGhiNhan: json['thoiGianGhiNhan'] != null
+          ? DateTime.tryParse(json['thoiGianGhiNhan'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'giaTri': giaTri,
+      if (thoiGianGhiNhan != null)
+        'thoiGianGhiNhan': thoiGianGhiNhan!.toIso8601String(),
+    };
+  }
+}
